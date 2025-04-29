@@ -21,6 +21,7 @@ const availableFormats = [
   'Email Banner',
   'Website Banner (Wide)',
   'Website Banner (Skyscraper)',
+  'JS', // Added JS format
 ];
 
 export default function FormatSelector() {
