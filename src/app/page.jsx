@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Label } from "@/components/ui/label"; // Import Label
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
-import { ArrowLeft, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input"; // Import Input
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Image as ImageIcon, Text, Settings } from 'lucide-react';
 import { useBrandContext } from '@/context/BrandContext';
 import Stepper from '@/components/Stepper';
 import UploadBox from '@/components/UploadBox';
@@ -27,16 +28,33 @@ const steps = [
   { id: 5, name: 'Preview' },
 ];
 
+// Function to determine ad size based on format
+const getAdSizeForFormat = (format) => {
+    switch (format) {
+        case 'Instagram Post': return { width: 1080, height: 1080 };
+        case 'Instagram Story': return { width: 1080, height: 1920 };
+        case 'Facebook Post': return { width: 1200, height: 630 };
+        case 'Twitter Post': return { width: 1080, height: 1080 }; // Or 1600x900
+        case 'LinkedIn Post': return { width: 1200, height: 627 };
+        case 'Email Banner': return { width: 600, height: 200 };
+        case 'Website Banner (Wide)': return { width: 728, height: 90 };
+        case 'Website Banner (Skyscraper)': return { width: 160, height: 600 };
+        case 'JS': return { width: 300, height: 250 }; // Example size for JS ad
+        default: return { width: 1024, height: 1024 }; // Default fallback
+    }
+};
+
+
 export default function Home() {
   const { state, dispatch, goToStep, nextStep, prevStep } = useBrandContext();
   const { toast } = useToast();
   const [promptTweaks, setPromptTweaks] = useState(''); // Local state for instructions
 
-
   const handleImageUpload = (imageDataUrl) => {
     dispatch({ type: 'SET_REFERENCE_IMAGE', payload: imageDataUrl });
   };
 
+  const adSize = useMemo(() => getAdSizeForFormat(state.outputFormat), [state.outputFormat]);
 
   const handleGenerateAds = async () => {
     if (!state.referenceImage) {
@@ -57,6 +75,15 @@ export default function Home() {
         goToStep(2); // Go back to brand info step
         return;
     }
+    if (state.numberOfVariations < 1 || state.numberOfVariations > 10) {
+        toast({
+            title: "Invalid Number of Variations",
+            description: "Please enter a number between 1 and 10.",
+            variant: "destructive",
+        });
+        goToStep(4); // Stay on generate step
+        return;
+    }
 
 
     dispatch({ type: 'GENERATION_START' });
@@ -69,9 +96,21 @@ export default function Home() {
         targetAudience: state.targetAudience,
         format: state.outputFormat,
         referenceText: state.referenceText || undefined, // Pass if available
+        numberOfVariations: state.numberOfVariations, // Pass number of variations
       };
+      console.log("Generating Copy with input:", copyInput);
       const copyResult = await generateAdCopy(copyInput);
       const adCopies = copyResult.variations; // Expecting array of {headline, subheadline, cta}
+      console.log("Generated Copy:", adCopies);
+
+      if (!adCopies || adCopies.length === 0) {
+        throw new Error("AI failed to generate ad copy variations.");
+      }
+      if (adCopies.length !== state.numberOfVariations) {
+          console.warn(`Requested ${state.numberOfVariations} copy variations, but received ${adCopies.length}. Using received count.`);
+          // Adjust numberOfVariations if AI returned a different number
+          dispatch({ type: 'SET_NUMBER_OF_VARIATIONS', payload: adCopies.length });
+      }
 
 
        // --- Generate Visual Ads (Simulated - Replace with actual API call) ---
@@ -84,25 +123,33 @@ export default function Home() {
         targetAudience: state.targetAudience,
         outputFormat: state.outputFormat,
         promptTweaks: promptTweaks || undefined,
+        numberOfVariations: state.numberOfVariations, // Use potentially adjusted number
+        width: adSize.width,
+        height: adSize.height,
        };
+       console.log("Generating Visuals with input:", visualInput);
 
       // In a real scenario, you would call generateVisualAd and get multiple image variations.
       // const visualResult = await generateVisualAd(visualInput);
       // const visualVariations = visualResult.generatedAdVariations; // Array of data URIs
+      // console.log("Generated Visuals:", visualVariations);
 
        // Simulate visual variations using the reference image for now
-       const visualVariations = Array(adCopies.length).fill(state.referenceImage);
+       const visualVariations = Array(state.numberOfVariations).fill(state.referenceImage); // Use adjusted count
 
 
       if (visualVariations.length !== adCopies.length) {
-          throw new Error("Mismatch between generated images and copy variations.");
+          // This check might be redundant now but good for safety
+          console.error("Mismatch after adjustment:", visualVariations.length, adCopies.length);
+          throw new Error("Mismatch between generated images and copy variations after adjustment.");
       }
 
 
       const combinedVariations = visualVariations.map((image, index) => ({
-        image: image, // Use generated image URI here
+        image: image, // Use generated image URI here when available
         copy: adCopies[index], // Pair with corresponding copy
       }));
+      console.log("Combined Variations:", combinedVariations);
 
       dispatch({ type: 'GENERATION_SUCCESS', payload: combinedVariations });
 
@@ -127,14 +174,13 @@ export default function Home() {
             <UploadBox onImageUpload={handleImageUpload} currentImage={state.referenceImage} />
              <Card>
                 <CardContent className="pt-6">
-                    <Label htmlFor="reference-text">Optional Text Description</Label>
+                    <Label htmlFor="reference-text" className='mb-2 block'>Optional Text Description</Label>
                     <Textarea
                         id="reference-text"
                         value={state.referenceText}
                         onChange={(e) => dispatch({ type: 'SET_REFERENCE_TEXT', payload: e.target.value })}
                         placeholder="Describe the reference ad (e.g., key message, elements)"
                         rows={3}
-                        className="mt-2"
                     />
                 </CardContent>
              </Card>
@@ -145,7 +191,44 @@ export default function Home() {
       case 3:
         return <FormatSelector />;
       case 4:
-        return <InstructionsBox value={promptTweaks} onChange={setPromptTweaks} />;
+        return (
+            <div className="space-y-6">
+                {/* Number of Variations Input */}
+                <Card>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="num-variations" className="flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                Number of Variations
+                            </Label>
+                            <Input
+                                id="num-variations"
+                                type="number"
+                                min="1"
+                                max="10" // Limit variations
+                                value={state.numberOfVariations}
+                                onChange={(e) => dispatch({ type: 'SET_NUMBER_OF_VARIATIONS', payload: parseInt(e.target.value, 10) || 1 })}
+                                className="w-24"
+                            />
+                            <p className="text-xs text-muted-foreground">Enter a number between 1 and 10.</p>
+                        </div>
+
+                        {/* Display Selected Format and Size */}
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium flex items-center gap-2"><Text className="h-4 w-4 text-muted-foreground" /> Selected Format:</p>
+                            <p className="text-sm text-muted-foreground pl-6">{state.outputFormat}</p>
+                        </div>
+                        <div className="space-y-1">
+                             <p className="text-sm font-medium flex items-center gap-2"><ImageIcon className="h-4 w-4 text-muted-foreground" /> Target Ad Size:</p>
+                             <p className="text-sm text-muted-foreground pl-6">{adSize.width}px &times; {adSize.height}px</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Instructions Box */}
+                 <InstructionsBox value={promptTweaks} onChange={setPromptTweaks} />
+            </div>
+        );
       case 5:
         return <VariationsPanel />;
       default:
@@ -159,7 +242,9 @@ export default function Home() {
         return !state.referenceImage;
       case 2:
         return !state.primaryColor || !state.secondaryColor || state.brandStyleWords.length === 0 || !state.targetAudience;
-      // Steps 3 and 4 don't have specific validation before proceeding
+      case 4:
+          return state.numberOfVariations < 1 || state.numberOfVariations > 10;
+      // Step 3 doesn't have specific validation before proceeding
       default:
         return false;
     }
@@ -172,7 +257,7 @@ export default function Home() {
 
       <Card className="mb-8 shadow-md">
         <CardContent className="p-6">
-            <Stepper steps={steps} currentStep={state.currentStep} />
+            <Stepper steps={steps} currentStep={state.currentStep} onStepClick={goToStep}/>
         </CardContent>
       </Card>
 
@@ -195,7 +280,7 @@ export default function Home() {
             Next <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         ) : state.currentStep === 4 ? (
-          <Button onClick={handleGenerateAds} disabled={state.isLoading}>
+          <Button onClick={handleGenerateAds} disabled={state.isLoading || isNextDisabled()}>
             {state.isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...

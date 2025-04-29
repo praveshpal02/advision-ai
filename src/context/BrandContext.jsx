@@ -14,6 +14,7 @@ const initialState = {
   brandStyleWords: [],
   targetAudience: '',
   outputFormat: 'Instagram Post', // Default format
+  numberOfVariations: 3, // Default number of variations
   generatedVariations: [],
   isLoading: false,
   error: null,
@@ -27,9 +28,20 @@ const initialState = {
 const brandReducer = (state, action) => {
   switch (action.type) {
     case 'SET_STEP':
-      return { ...state, currentStep: action.payload };
+        // Ensure step is within bounds
+        const newStep = Math.max(1, Math.min(5, action.payload));
+        // Prevent going to preview if no variations generated (unless loading/error)
+        if (newStep === 5 && state.generatedVariations.length === 0 && !state.isLoading && !state.error) {
+            return state;
+        }
+        return { ...state, currentStep: newStep };
     case 'NEXT_STEP':
-      return { ...state, currentStep: state.currentStep + 1 };
+        const next = Math.min(5, state.currentStep + 1);
+        // Prevent going to preview if no variations generated (unless loading/error)
+        if (next === 5 && state.generatedVariations.length === 0 && !state.isLoading && !state.error) {
+            return state;
+        }
+        return { ...state, currentStep: next };
     case 'PREV_STEP':
       return { ...state, currentStep: Math.max(1, state.currentStep - 1) };
     case 'SET_REFERENCE_IMAGE':
@@ -54,6 +66,9 @@ const brandReducer = (state, action) => {
       return { ...state, targetAudience: action.payload };
     case 'SET_OUTPUT_FORMAT':
       return { ...state, outputFormat: action.payload };
+    case 'SET_NUMBER_OF_VARIATIONS':
+        const variations = Math.max(1, Math.min(10, action.payload)); // Clamp between 1 and 10
+        return { ...state, numberOfVariations: variations };
     case 'GENERATION_START':
       return { ...state, isLoading: true, error: null, generatedVariations: [] };
     case 'GENERATION_SUCCESS':
