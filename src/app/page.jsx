@@ -230,7 +230,7 @@ export default function Home() {
 
       // --- Generate Visual Ads (Leverage analysis results) ---
       const visualInput = {
-        referenceAdImage: state.referenceImage, // Pass for context if needed by DALL-E prompt generation
+        // referenceAdImage: state.referenceImage, // Removed, not in schema
         openaiApiKey: state.openaiApiKey, // Pass API key - NOW REQUIRED
         // Use manually set colors primarily, fallback to analyzed if necessary
         brandColors: [
@@ -251,11 +251,11 @@ export default function Home() {
             textElements: state.analysisResult.textElements,
             // Pass the full colors object from analysis
             colors: state.analysisResult.colors,
-        } : undefined,
+        } : null, // Pass null if no analysis result
         // Pass generated copy elements to potentially include in the visual prompt
-         copyElements: adCopies[0], // Pass first generated copy for prompt context
+         copyElements: adCopies.length > 0 ? adCopies[0] : null, // Pass first generated copy or null
       };
-      console.log('Generating Visuals with input:', visualInput);
+      console.log('Generating Visuals with input:', JSON.stringify(visualInput, null, 2)); // Log the exact input
 
       // Call the actual visual ad generation flow wrapper
       const visualResult = await generateVisualAdWrapper(visualInput);
@@ -464,7 +464,7 @@ export default function Home() {
     switch (state.currentStep) {
       case 1:
         // Disable if analyzing, or if image uploaded but analysis failed/not started
-        return isAnalyzing || (!state.analysisResult && !!state.referenceImage) || !state.referenceImage;
+        return isAnalyzing || (!state.analysisResult && !!state.referenceImage && !state.analysisError) || !state.referenceImage;
       case 2:
         return (
           !state.primaryColor ||

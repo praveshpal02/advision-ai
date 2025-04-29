@@ -3,7 +3,7 @@
  * Separated from flow files to avoid exporting non-async functions from 'use server' modules.
  */
 import { z } from 'genkit';
-import { AdCopySchema } from '@/types/index.ts'; // Use .ts extension as it exists
+import { AdCopySchema } from '@/types/index'; // Use .ts extension as it exists
 
 // --- Schemas for analyze-image flow ---
 
@@ -31,19 +31,14 @@ export const AnalyzeImageOutputSchema = z.object({
       headline: z.string().optional().describe('Detected headline text.'),
       subheadline: z.string().optional().describe('Detected subheadline text.'),
       cta: z.string().optional().describe('Detected call-to-action button text.'),
-  }).describe("Extracted text elements from the ad."),
+  }).optional().describe("Extracted text elements from the ad."), // Made optional as analysis might fail parts
 });
 
 
 // --- Schemas for generate-visual-ad flow ---
 
 export const GenerateVisualAdInputSchema = z.object({
-  referenceAdImage: z
-    .string()
-    .optional() // Make reference optional, primarily for analysis before this step
-    .describe(
-      "A reference ad image (optional), as a data URI. Used for style analysis if available."
-    ),
+  // referenceAdImage is removed as it's not directly used; analysis data is sufficient.
   openaiApiKey: z.string().min(1, { message: "OpenAI API Key is required." }).describe('The OpenAI API Key for using DALL-E.'),
   brandColors: z.array(z.string()).describe('An array of brand colors (hex codes).'),
   brandStyleWords: z.array(z.string()).describe('An array of style words describing the brand.'),
@@ -100,9 +95,10 @@ export const GeneratePromptInputSchema = z.object({
   targetAudience: z.string().describe('Description of the target audience (age, interests).'),
   outputFormat: z.string().describe('The format of the ad (e.g., IG Post, Banner, Email).'),
   promptTweaks: z.string().optional().describe('Optional user instructions to refine the prompt.'),
-  analyzedData: AnalyzedDataSchema,
-  copyElements: AdCopySchema.optional(),
+  analyzedData: AnalyzedDataSchema.nullable(), // Allow null
+  copyElements: AdCopySchema.optional().nullable(), // Allow null
 });
+
 
 export const GeneratePromptOutputSchema = z.object({
   dallePrompt: z.string().describe('The generated DALL-E prompt for image creation.'),
