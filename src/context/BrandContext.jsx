@@ -9,6 +9,7 @@ import { createContext, useContext, useReducer, useCallback } from 'react';
 const initialState = {
   referenceImage: null,
   referenceText: '',
+  openaiApiKey: '', // Added OpenAI API Key field
   primaryColor: '#3498db', // Default Muted Blue
   secondaryColor: '#008080', // Default Teal Accent
   brandStyleWords: [],
@@ -48,6 +49,8 @@ const brandReducer = (state, action) => {
       return { ...state, referenceImage: action.payload, error: null }; // Clear error on new image
     case 'SET_REFERENCE_TEXT':
       return { ...state, referenceText: action.payload };
+    case 'SET_OPENAI_API_KEY': // Added action type
+        return { ...state, openaiApiKey: action.payload };
     case 'SET_PRIMARY_COLOR':
         return { ...state, primaryColor: action.payload };
     case 'SET_SECONDARY_COLOR':

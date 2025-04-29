@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; // Import Input
-import { ArrowLeft, ArrowRight, Sparkles, Loader2, Image as ImageIcon, Text, Settings } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Image as ImageIcon, Text, Settings, KeyRound } from 'lucide-react';
 import { useBrandContext } from '@/context/BrandContext';
 import Stepper from '@/components/Stepper';
 import UploadBox from '@/components/UploadBox';
@@ -57,6 +57,7 @@ export default function Home() {
   const adSize = useMemo(() => getAdSizeForFormat(state.outputFormat), [state.outputFormat]);
 
   const handleGenerateAds = async () => {
+    // --- Validation ---
     if (!state.referenceImage) {
         toast({
             title: "Missing Reference Image",
@@ -66,6 +67,17 @@ export default function Home() {
         goToStep(1); // Go back to upload step
         return;
     }
+     // Although optional for the flow, check if user intended to input one but left it empty
+     // This is a UX check rather than a hard requirement for the current *simulated* flow.
+     // if (!state.openaiApiKey) {
+     //   toast({
+     //     title: "Missing OpenAI API Key",
+     //     description: "Please enter your OpenAI API key in Step 1.",
+     //     variant: "destructive",
+     //   });
+     //   goToStep(1);
+     //   return;
+     // }
     if (!state.primaryColor || !state.secondaryColor || state.brandStyleWords.length === 0 || !state.targetAudience) {
         toast({
             title: "Missing Brand Info",
@@ -84,7 +96,7 @@ export default function Home() {
         goToStep(4); // Stay on generate step
         return;
     }
-
+    // --- End Validation ---
 
     dispatch({ type: 'GENERATION_START' });
 
@@ -113,11 +125,10 @@ export default function Home() {
       }
 
 
-       // --- Generate Visual Ads (Simulated - Replace with actual API call) ---
-      // For now, we'll just use the reference image for all variations
-      // and pair it with the generated copy.
+       // --- Generate Visual Ads ---
        const visualInput = {
-        referenceAdImage: state.referenceImage,
+        referenceAdImage: state.referenceImage, // Still useful for style analysis if model supports it
+        openaiApiKey: state.openaiApiKey || undefined, // Pass API key
         brandColors: [state.primaryColor, state.secondaryColor],
         brandStyleWords: state.brandStyleWords,
         targetAudience: state.targetAudience,
@@ -129,24 +140,26 @@ export default function Home() {
        };
        console.log("Generating Visuals with input:", visualInput);
 
-      // In a real scenario, you would call generateVisualAd and get multiple image variations.
-      // const visualResult = await generateVisualAd(visualInput);
-      // const visualVariations = visualResult.generatedAdVariations; // Array of data URIs
-      // console.log("Generated Visuals:", visualVariations);
+      // Call the actual visual ad generation flow
+      const visualResult = await generateVisualAd(visualInput);
+      const visualVariations = visualResult.generatedAdVariations; // Array of data URIs or URLs
+      console.log("Generated Visuals:", visualVariations);
 
-       // Simulate visual variations using the reference image for now
-       const visualVariations = Array(state.numberOfVariations).fill(state.referenceImage); // Use adjusted count
-
-
-      if (visualVariations.length !== adCopies.length) {
-          // This check might be redundant now but good for safety
-          console.error("Mismatch after adjustment:", visualVariations.length, adCopies.length);
-          throw new Error("Mismatch between generated images and copy variations after adjustment.");
+      if (!visualVariations || visualVariations.length === 0) {
+          throw new Error("AI failed to generate visual ad variations.");
       }
 
+      // Adjust copy array length if visual generation returned a different number than requested/adjusted copy count
+      const finalVariationCount = visualVariations.length;
+      if (finalVariationCount !== adCopies.length) {
+          console.warn(`Visual variations (${finalVariationCount}) differ from copy variations (${adCopies.length}). Trimming to match visuals.`);
+          // Update state and trim copy array
+          dispatch({ type: 'SET_NUMBER_OF_VARIATIONS', payload: finalVariationCount });
+          adCopies.length = finalVariationCount; // Trim the copy array
+      }
 
       const combinedVariations = visualVariations.map((image, index) => ({
-        image: image, // Use generated image URI here when available
+        image: image, // Use generated image URI/URL here
         copy: adCopies[index], // Pair with corresponding copy
       }));
       console.log("Combined Variations:", combinedVariations);
@@ -173,15 +186,32 @@ export default function Home() {
           <div className="space-y-4">
             <UploadBox onImageUpload={handleImageUpload} currentImage={state.referenceImage} />
              <Card>
-                <CardContent className="pt-6">
-                    <Label htmlFor="reference-text" className='mb-2 block'>Optional Text Description</Label>
-                    <Textarea
-                        id="reference-text"
-                        value={state.referenceText}
-                        onChange={(e) => dispatch({ type: 'SET_REFERENCE_TEXT', payload: e.target.value })}
-                        placeholder="Describe the reference ad (e.g., key message, elements)"
-                        rows={3}
-                    />
+                <CardContent className="pt-6 space-y-4">
+                    <div>
+                        <Label htmlFor="reference-text" className='mb-2 block'>Optional Text Description</Label>
+                        <Textarea
+                            id="reference-text"
+                            value={state.referenceText}
+                            onChange={(e) => dispatch({ type: 'SET_REFERENCE_TEXT', payload: e.target.value })}
+                            placeholder="Describe the reference ad (e.g., key message, elements)"
+                            rows={3}
+                        />
+                    </div>
+                     <div>
+                        <Label htmlFor="openai-api-key" className="mb-2 block flex items-center gap-2">
+                            <KeyRound className="h-4 w-4" /> OpenAI API Key (Optional for Image Generation)
+                        </Label>
+                        <Input
+                            id="openai-api-key"
+                            type="password" // Use password type to obscure the key
+                            value={state.openaiApiKey}
+                            onChange={(e) => dispatch({ type: 'SET_OPENAI_API_KEY', payload: e.target.value })}
+                            placeholder="Enter your OpenAI API Key"
+                            />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Needed for generating ad visuals using DALL·E. Your key is not stored persistently.
+                        </p>
+                    </div>
                 </CardContent>
              </Card>
           </div>
@@ -239,6 +269,8 @@ export default function Home() {
   const isNextDisabled = () => {
     switch (state.currentStep) {
       case 1:
+        // Make OpenAI key optional for proceeding, but required for generation if entered partially?
+        // For now, only reference image is strictly required to proceed from step 1.
         return !state.referenceImage;
       case 2:
         return !state.primaryColor || !state.secondaryColor || state.brandStyleWords.length === 0 || !state.targetAudience;
