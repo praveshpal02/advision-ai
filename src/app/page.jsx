@@ -24,10 +24,11 @@ import BrandInputSection from '@/components/BrandInputSection';
 import FormatSelector from '@/components/FormatSelector';
 import InstructionsBox from '@/components/InstructionsBox';
 import VariationsPanel from '@/components/VariationsPanel';
-import { analyzeImageWrapper } from '@/ai/flows/analyze-image'; // Import the updated analysis flow
-import { generateAdCopy } from '@/ai/flows/generate-ad-copy';
-import { generateVisualAd } from '@/ai/flows/generate-visual-ad';
+import { analyzeImageWrapper } from '@/ai/flows/analyze-image.jsx'; // Import the updated analysis flow from jsx
+import { generateAdCopy } from '@/ai/flows/generate-ad-copy.jsx'; // Import from jsx
+import { generateVisualAdWrapper } from '@/ai/flows/generate-visual-ad.jsx'; // Import wrapper function
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added import for Alert
 
 const steps = [
   { id: 1, name: 'Upload & Analyze' }, // Renamed step 1
@@ -248,14 +249,16 @@ export default function Home() {
             fontStyle: state.analysisResult.fontStyle,
             layoutStyle: state.analysisResult.layoutStyle,
             textElements: state.analysisResult.textElements,
+            // Pass the full colors object from analysis
+            colors: state.analysisResult.colors,
         } : undefined,
         // Pass generated copy elements to potentially include in the visual prompt
          copyElements: adCopies[0], // Pass first generated copy for prompt context
       };
       console.log('Generating Visuals with input:', visualInput);
 
-      // Call the actual visual ad generation flow
-      const visualResult = await generateVisualAd(visualInput);
+      // Call the actual visual ad generation flow wrapper
+      const visualResult = await generateVisualAdWrapper(visualInput);
       const visualVariations = visualResult.generatedAdVariations; // Array of data URIs or URLs
       console.log('Generated Visuals:', visualVariations);
 

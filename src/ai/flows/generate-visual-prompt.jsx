@@ -3,59 +3,25 @@
  * @fileOverview Generates a detailed DALL-E prompt for visual ad creation, incorporating analysis and copy generation results.
  *
  * - generatePrompt - A function that generates a DALL-E prompt.
- * - GeneratePromptInputSchema - The Zod schema for the input to generatePrompt.
- * - GeneratePromptOutputSchema - The Zod schema for the output of generatePrompt.
+ * Imports schemas from `src/types/flow-schemas.js`.
  */
 
 import { ai } from '@/ai/ai-instance';
-import { z } from 'genkit';
-import { AdCopySchema } from '@/types'; // Import AdCopySchema Zod schema
+// Import schemas from the dedicated non-'use server' file
+import { GeneratePromptInputSchema, GeneratePromptOutputSchema } from '@/types/flow-schemas.js';
 
-// Define schema for analyzed data input
-const AnalyzedDataSchema = z.object({
-    fontStyle: z.string().optional().describe('Analyzed font style (e.g., sans-serif, bold).'),
-    layoutStyle: z.string().optional().describe('Analyzed layout style (e.g., centered, grid).'),
-    textElements: z.object({
-        headline: z.string().optional(),
-        subheadline: z.string().optional(),
-        cta: z.string().optional(),
-    }).optional().describe("Analyzed text elements."),
-}).optional();
-
-// Define schema for generated copy input
-// Use the imported AdCopySchema Zod schema directly
-const CopyElementsSchema = AdCopySchema.optional();
-
-
-const GeneratePromptInputSchema = z.object({
-  brandColors: z.array(z.string()).describe('An array of brand colors (hex codes).'),
-  brandStyleWords: z.array(z.string()).describe('An array of style words describing the brand (e.g., playful, luxury, modern).'),
-  targetAudience: z.string().describe('Description of the target audience (age, interests).'),
-  outputFormat: z.string().describe('The format of the ad (e.g., IG Post, Banner, Email).'),
-  promptTweaks: z.string().optional().describe('Optional user instructions to refine the prompt.'),
-  // referenceText: z.string().optional().describe('Optional text description of a reference ad or desired elements.'), // Replaced by analyzed/generated text
-  analyzedData: AnalyzedDataSchema,
-  copyElements: CopyElementsSchema,
-});
-// Removed TypeScript type export and direct Zod schema export
-
-const GeneratePromptOutputSchema = z.object({
-  dallePrompt: z.string().describe('The generated DALL-E prompt for image creation.'),
-});
-// Removed TypeScript type export and direct Zod schema export
-
-export async function generatePrompt(input /*: GeneratePromptInput */) /*: Promise<GeneratePromptOutput> */ {
-  // Type hints removed as they are not valid in JSX
+// Only export the async wrapper function
+export async function generatePrompt(input) {
   return generatePromptFlow(input);
 }
 
 const promptGenerator = ai.definePrompt({
   name: 'generateDallePrompt',
   input: {
-    schema: GeneratePromptInputSchema,
+    schema: GeneratePromptInputSchema, // Use imported schema
   },
   output: {
-    schema: GeneratePromptOutputSchema,
+    schema: GeneratePromptOutputSchema, // Use imported schema
   },
   prompt: `You are an AI assistant specialized in crafting highly effective DALL-E prompts for generating advertising visuals. Create a single, detailed prompt based on the provided information.
 
@@ -83,6 +49,9 @@ Analysis Insights:
     - Analyzed Headline: {{{analyzedData.textElements.headline}}}
     - Analyzed Subheadline: {{{analyzedData.textElements.subheadline}}}
     - Analyzed CTA: {{{analyzedData.textElements.cta}}}
+    {{/if}}
+    {{#if analyzedData.colors}}
+    - Analyzed Colors: Primary: {{{analyzedData.colors.primary}}}, Secondary: {{{analyzedData.colors.secondary}}}, Background: {{{analyzedData.colors.background}}}
     {{/if}}
 {{/if}}
 
@@ -125,6 +94,3 @@ const generatePromptFlow = ai.defineFlow(
     return output;
   }
 );
-
-// Removed schema exports
-// export { GeneratePromptInputSchema, GeneratePromptOutputSchema };

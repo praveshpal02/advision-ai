@@ -1,49 +1,27 @@
-
-// This file is machine-generated - changes may be lost.
 'use server';
 /**
  * @fileOverview Generates ad copy variations (headline, subheadline, CTA) based on brand guidelines.
  *
  * - generateAdCopy - A function that generates ad copy variations.
- * - GenerateAdCopyInput - The input type for the generateAdCopy function.
- * - GenerateAdCopyOutput - The return type for the generateAdCopy function.
+ * Imports schemas from `src/types/flow-schemas.js`.
  */
 
 import {ai} from '@/ai/ai-instance';
-import {z} from 'genkit';
+// Import schemas from the dedicated non-'use server' file
+import { GenerateAdCopyInputSchema, GenerateAdCopyOutputSchema } from '@/types/flow-schemas.js';
 
-const GenerateAdCopyInputSchema = z.object({
-  brandStyle: z.string().describe('Style words describing the brand (e.g., playful, luxury, modern).'),
-  colors: z.array(z.string()).describe('Color palette of the brand (as hex codes).'),
-  targetAudience: z.string().describe('Description of the target audience (age, interests).'),
-  format: z.string().describe('The format of the ad (e.g., IG Post, Banner, Email).'),
-  referenceText: z.string().optional().describe('Optional text description of the ad.'),
-  numberOfVariations: z.number().int().min(1).max(10).describe('The number of ad variations to generate (1-10).'),
-});
-export type GenerateAdCopyInput = z.infer<typeof GenerateAdCopyInputSchema>;
-
-const AdCopySchema = z.object({
-  headline: z.string().describe('The main headline of the ad.'),
-  subheadline: z.string().describe('The subheadline of the ad.'),
-  cta: z.string().describe('The call to action for the ad.'),
-});
-
-const GenerateAdCopyOutputSchema = z.object({
-  variations: z.array(AdCopySchema).describe('An array of ad copy variations.'),
-});
-export type GenerateAdCopyOutput = z.infer<typeof GenerateAdCopyOutputSchema>;
-
-export async function generateAdCopy(input: GenerateAdCopyInput): Promise<GenerateAdCopyOutput> {
+// Only export the async wrapper function
+export async function generateAdCopy(input) {
   return generateAdCopyFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'generateAdCopyPrompt',
   input: {
-    schema: GenerateAdCopyInputSchema, // Use the updated schema here
+    schema: GenerateAdCopyInputSchema, // Use the imported schema
   },
   output: {
-    schema: GenerateAdCopyOutputSchema, // Use the updated schema here
+    schema: GenerateAdCopyOutputSchema, // Use the imported schema
   },
   prompt: `You are an AI copywriter specializing in generating ad copy for various brands and formats. Generate exactly {{{numberOfVariations}}} ad copy variations (each with a headline, subheadline, CTA) based on the following brand guidelines and format:
 
@@ -62,10 +40,7 @@ Output as a JSON object with a single field called "variations", which is an arr
 `,
 });
 
-const generateAdCopyFlow = ai.defineFlow<
-  typeof GenerateAdCopyInputSchema,
-  typeof GenerateAdCopyOutputSchema
->({
+const generateAdCopyFlow = ai.defineFlow({
   name: 'generateAdCopyFlow',
   inputSchema: GenerateAdCopyInputSchema,
   outputSchema: GenerateAdCopyOutputSchema,

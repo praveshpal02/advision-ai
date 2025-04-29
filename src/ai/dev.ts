@@ -1,8 +1,6 @@
 
-import '@/ai/flows/iterate-ad-copy'; // Assuming no name change
-import '@/ai/flows/generate-ad-copy'; // Assuming no name change
-import '@/ai/flows/generate-visual-ad.jsx'; // Ensure the correct file extension is imported
-import '@/ai/flows/analyze-image'; // Assuming no name change
-import '@/ai/flows/generate-visual-prompt.jsx'; // Changed import to jsx
-
-
+import '@/ai/flows/iterate-ad-copy.jsx';
+import '@/ai/flows/generate-ad-copy.jsx';
+import '@/ai/flows/generate-visual-ad.jsx';
+import '@/ai/flows/analyze-image.jsx';
+import '@/ai/flows/generate-visual-prompt.jsx';

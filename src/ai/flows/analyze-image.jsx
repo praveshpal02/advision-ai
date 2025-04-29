@@ -3,43 +3,13 @@
 /**
  * @fileOverview Analyzes an image using Gemini Vision via Genkit to extract colors, style, layout, and text elements.
  *
- * - analyzeImageFlow - A function that analyzes the image and returns the analysis.
- * - AnalyzeImageInput - The input type for the analyzeImageFlow function.
- * - AnalyzeImageOutput - The return type for the analyzeImageFlow function.
+ * - analyzeImageWrapper - A function that analyzes the image and returns the analysis.
+ * Imports schemas from `src/types/flow-schemas.js`.
  */
 
 import { ai } from '@/ai/ai-instance';
-import { z } from 'genkit';
-// import { analyzeImage } from '@/services/vision'; // No longer using the separate service
-
-const AnalyzeImageInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of an ad, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type AnalyzeImageInput = z.infer<typeof AnalyzeImageInputSchema>;
-
-const AnalyzeImageOutputSchema = z.object({
-  colors: z.object({
-      primary: z.string().optional().describe('Primary color found in the image (hex code).'),
-      secondary: z.string().optional().describe('Secondary color found in the image (hex code).'),
-      background: z.string().optional().describe('Background color found in the image (hex code).'),
-      palette: z.array(z.string()).describe('Dominant colors found in the image, as hex codes.'),
-  }).describe("Extracted color information."),
-  styleKeywords: z
-    .array(z.string())
-    .describe('Keywords describing the style of the image (e.g., \'modern\', \'vintage\', \'minimalist\').'),
-  fontStyle: z.string().optional().describe('General description of the font style used (e.g., sans-serif, bold, modern).'),
-  layoutStyle: z.string().optional().describe('Description of the overall layout style (e.g., centered, asymmetrical).'),
-  textElements: z.object({
-      headline: z.string().optional().describe('Detected headline text.'),
-      subheadline: z.string().optional().describe('Detected subheadline text.'),
-      cta: z.string().optional().describe('Detected call-to-action button text.'),
-  }).describe("Extracted text elements from the ad."),
-});
-export type AnalyzeImageOutput = z.infer<typeof AnalyzeImageOutputSchema>;
+// Import schemas from the dedicated non-'use server' file
+import { AnalyzeImageInputSchema, AnalyzeImageOutputSchema } from '@/types/flow-schemas.js';
 
 
 const analysisPrompt = ai.definePrompt({
@@ -63,10 +33,7 @@ Respond *only* with the JSON object matching the output schema. Ensure hex codes
 });
 
 
-const analyzeImageFlow = ai.defineFlow<
-  typeof AnalyzeImageInputSchema,
-  typeof AnalyzeImageOutputSchema
->({
+const analyzeImageFlow = ai.defineFlow({
   name: 'analyzeImageFlow',
   inputSchema: AnalyzeImageInputSchema,
   outputSchema: AnalyzeImageOutputSchema,
@@ -80,8 +47,8 @@ const analyzeImageFlow = ai.defineFlow<
         }
         console.log("Image Analysis Result:", output);
 
-        // Ensure the output structure matches the schema, especially nested objects
-        const validatedOutput: AnalyzeImageOutput = {
+        // Basic validation/structuring can still happen here if needed, but rely on schema
+        const validatedOutput = {
             colors: {
                 primary: output.colors?.primary,
                 secondary: output.colors?.secondary,
@@ -106,7 +73,7 @@ const analyzeImageFlow = ai.defineFlow<
   }
 );
 
-// Wrapper remains the same
-export async function analyzeImageWrapper(input: AnalyzeImageInput): Promise<AnalyzeImageOutput> {
+// Only export the async wrapper function
+export async function analyzeImageWrapper(input) {
   return analyzeImageFlow(input);
 }
