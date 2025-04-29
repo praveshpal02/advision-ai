@@ -20,9 +20,9 @@ const analysisPrompt = ai.definePrompt({
 
 1.  **Color Palette:** Identify the primary, secondary, and background colors. Also list up to 5 dominant colors overall as hex codes.
 2.  **Font Style:** Describe the general style of the fonts used (e.g., 'Clean sans-serif', 'Bold serif', 'Handwritten script', 'Modern geometric').
-3.  **Layout Style:** Describe the overall layout structure (e.g., 'Centered composition with prominent image', 'Asymmetrical layout with text overlay', 'Grid-based structure').
+3.  **Layout Style:** Describe the overall layout structure (e.g., 'Centered composition with prominent image', 'Asymmetrical layout with text overlay', 'Grid-based structure', 'Split layout').
 4.  **Text Elements:** Extract the main headline, subheadline (if present), and call-to-action (CTA) button text (if present). If an element is not clearly identifiable, omit its field or set it to null.
-5.  **Style Keywords:** Provide 3-5 keywords describing the overall visual style (e.g., 'modern', 'minimalist', 'bold', 'playful', 'corporate', 'vintage').
+5.  **Style Keywords:** Provide 3-5 keywords describing the overall visual style (e.g., 'modern', 'minimalist', 'bold', 'playful', 'corporate', 'vintage', 'gradient').
 
 Image to analyze:
 {{media url=photoDataUri}}
