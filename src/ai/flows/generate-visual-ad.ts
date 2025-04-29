@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI-powered visual ad generator flow using DALL-E 3.
@@ -11,18 +10,20 @@
 import { ai } from '@/ai/ai-instance';
 import { z } from 'genkit';
 import OpenAI from 'openai';
-import { generatePrompt } from '@/ai/flows/generate-visual-prompt'; // Import the prompt generation flow
+import { generatePrompt, GeneratePromptInput } from '@/ai/flows/generate-visual-prompt'; // Import the prompt generation flow and its input type
+import type { AnalyzeImageOutput } from '@/ai/flows/analyze-image'; // Import analysis output type
+import type { AdCopySchema } from '@/types'; // Import AdCopySchema type
 
 
-// Refined input schema including OpenAI API key
+// Refined input schema including OpenAI API key and analyzed/copy data
 const GenerateVisualAdInputSchema = z.object({
   referenceAdImage: z
     .string()
-    .optional() // Make reference optional, as we generate from text prompt
+    .optional() // Make reference optional, primarily for analysis before this step
     .describe(
-      "A reference ad image (optional), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. Used for style analysis if available."
+      "A reference ad image (optional), as a data URI. Used for style analysis if available."
     ),
-  openaiApiKey: z.string().optional().describe('The OpenAI API Key for using DALL-E.'),
+  openaiApiKey: z.string().min(1, { message: "OpenAI API Key is required." }).describe('The OpenAI API Key for using DALL-E.'),
   brandColors: z.array(z.string()).describe('An array of brand colors (hex codes).'),
   brandStyleWords: z.array(z.string()).describe('An array of style words describing the brand.'),
   targetAudience: z.string().describe('Description of the target audience.'),
@@ -31,6 +32,9 @@ const GenerateVisualAdInputSchema = z.object({
   numberOfVariations: z.number().int().min(1).max(10).default(1).describe('The number of visual ad variations to generate (1-10, DALL-E 3 currently supports 1 per call).'),
   width: z.number().int().positive().describe('The target width of the generated ad in pixels.'),
   height: z.number().int().positive().describe('The target height of the generated ad in pixels.'),
+  // Add complex types for analyzed data and copy elements
+  analyzedData: z.custom<AnalyzeImageOutput['analysisResult']>().optional().describe('Data extracted from image analysis (layout, font, text).'), // Use the type from analysis flow
+  copyElements: z.custom<AdCopySchema>().optional().describe('Generated ad copy elements (headline, subheadline, CTA).'), // Use the imported type
 });
 export type GenerateVisualAdInput = z.infer<typeof GenerateVisualAdInputSchema>;
 
@@ -46,36 +50,36 @@ const getDalleSize = (width: number, height: number): "1024x1024" | "1792x1024" 
     // Find the closest supported DALL-E 3 size.
     // This is a simple heuristic, might need refinement.
     const aspectRatio = width / height;
-    if (aspectRatio > 1.3) return "1792x1024"; // Wider
-    if (aspectRatio < 0.7) return "1024x1792"; // Taller
-    return "1024x1024"; // Square-ish
+    if (width >= 1792 && height >= 1024 && aspectRatio > 1.3) return "1792x1024"; // Wider
+    if (width >= 1024 && height >= 1792 && aspectRatio < 0.7) return "1024x1792"; // Taller
+    // Default or if dimensions don't match wide/tall ratios well
+    return "1024x1024";
 };
 
 
 export async function generateVisualAd(input: GenerateVisualAdInput): Promise<GenerateVisualAdOutput> {
     console.log("Starting generateVisualAd flow...");
 
-    if (!input.openaiApiKey) {
-        throw new Error("OpenAI API Key is required for visual ad generation.");
-    }
+    // Validation is handled by Zod schema now for apiKey
 
     const openai = new OpenAI({
         apiKey: input.openaiApiKey,
     });
 
     // --- Generate the DALL-E Prompt ---
-    console.log("Generating DALL-E prompt...");
+    console.log("Generating DALL-E prompt using analysis and copy data...");
     let dallePromptText = "";
     try {
-        const promptResult = await generatePrompt({
+        const promptInput: GeneratePromptInput = {
              brandColors: input.brandColors,
              brandStyleWords: input.brandStyleWords,
              targetAudience: input.targetAudience,
              outputFormat: input.outputFormat,
              promptTweaks: input.promptTweaks,
-             // Include reference text if available and relevant for the prompt
-             referenceText: input.referenceAdImage ? "Visual style inspired by the uploaded reference image." : undefined,
-        });
+             analyzedData: input.analyzedData, // Pass analyzed data
+             copyElements: input.copyElements, // Pass generated copy
+        };
+        const promptResult = await generatePrompt(promptInput); // Call the updated prompt generator
         dallePromptText = promptResult.dallePrompt;
         console.log("Generated DALL-E Prompt:", dallePromptText);
     } catch (error) {
@@ -91,26 +95,26 @@ export async function generateVisualAd(input: GenerateVisualAdInput): Promise<Ge
     // We need to make multiple calls if numberOfVariations > 1.
     const numVariationsToGenerate = Math.min(input.numberOfVariations, 10); // Ensure max 10
 
-    console.log(`Generating ${numVariationsToGenerate} visual variations using DALL-E 3...`);
+    console.log(`Generating ${numVariationsToGenerate} visual variations using DALL-E 3 (${dalleSize})...`);
 
     for (let i = 0; i < numVariationsToGenerate; i++) {
         console.log(`Generating variation ${i + 1}...`);
+        let currentPrompt = dallePromptText;
+        // Add slight variation to prompt for subsequent calls if desired and generating more than one
+        if (numVariationsToGenerate > 1) {
+            currentPrompt += ` (Style variation ${i + 1})`; // Add variation seed
+        }
+
         try {
             const response = await openai.images.generate({
                 model: "dall-e-3",
-                prompt: dallePromptText, // Use the generated prompt
+                prompt: currentPrompt, // Use the potentially modified prompt
                 n: 1, // Generate one image at a time
                 size: dalleSize,
                 response_format: "b64_json", // Get base64 encoded image data
-                // style: 'vivid', // or 'natural' - optional style preference
-                // quality: 'hd', // or 'standard' - optional quality preference
+                quality: "hd", // Request higher quality
+                style: 'vivid', // Optional: lean towards more vivid images
             });
-
-            // Add slight variation to prompt for subsequent calls if desired
-            if (i < numVariationsToGenerate - 1) {
-                dallePromptText += ` (variation ${i + 2})`; // Simple way to potentially get different results
-            }
-
 
             const b64Json = response.data[0]?.b64_json;
             if (b64Json) {
@@ -127,6 +131,8 @@ export async function generateVisualAd(input: GenerateVisualAdInput): Promise<Ge
              if (error.response) {
                 console.error('DALL-E API Error Status:', error.response.status);
                 console.error('DALL-E API Error Data:', error.response.data);
+              } else {
+                console.error('DALL-E API Error:', error.message || error);
               }
             // For now, let's throw if any variation fails to ensure caller knows
             throw new Error(`Failed to generate image variation ${i + 1}: ${error.message || 'Unknown DALL-E error'}`);

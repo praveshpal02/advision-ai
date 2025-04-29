@@ -1,6 +1,6 @@
 
-import '@/ai/flows/iterate-ad-copy.ts';
-import '@/ai/flows/generate-ad-copy.ts';
-import '@/ai/flows/generate-visual-ad.ts';
-import '@/ai/flows/analyze-image.ts';
-import '@/ai/flows/generate-visual-prompt.ts'; // Added import
+import '@/ai/flows/iterate-ad-copy'; // Assuming no name change
+import '@/ai/flows/generate-ad-copy'; // Assuming no name change
+import '@/ai/flows/generate-visual-ad'; // Assuming no name change
+import '@/ai/flows/analyze-image'; // Assuming no name change
+import '@/ai/flows/generate-visual-prompt'; // Assuming no name change
