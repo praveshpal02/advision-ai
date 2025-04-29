@@ -39,8 +39,9 @@ export default function Stepper({ steps, currentStep, onStepClick, className }) 
               )}
                <span className="sr-only">{step.name}</span>
             </button>
+            {/* Added text-center to ensure alignment */}
             <p className={cn(
-                "absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium sm:text-sm",
+                "absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-medium text-center sm:text-sm",
                  step.id === currentStep ? "text-primary" : "text-muted-foreground"
                 )}>
                 {step.name}
