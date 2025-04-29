@@ -13,40 +13,7 @@ import { useBrandContext } from '@/context/BrandContext';
 
 export default function BrandInputSection() {
   const { state, dispatch } = useBrandContext();
-  const [colorInput, setColorInput] = useState('#');
   const [styleWordInput, setStyleWordInput] = useState('');
-
-  const handleColorChange = (e) => {
-    let value = e.target.value;
-    // Ensure '#' is always present and allow only hex chars
-    if (!value.startsWith('#')) {
-      value = '#' + value;
-    }
-    value = '#' + value.substring(1).replace(/[^0-9a-fA-F]/g, '');
-    setColorInput(value);
-  };
-
-  const handleAddColor = () => {
-    const hexColorRegex = /^#[0-9a-fA-F]{6}$/;
-    if (hexColorRegex.test(colorInput) && !state.brandColors.includes(colorInput)) {
-      dispatch({ type: 'ADD_BRAND_COLOR', payload: colorInput });
-      setColorInput('#'); // Reset input
-    } else if (!hexColorRegex.test(colorInput)) {
-        // Optionally add toast notification for invalid format
-        console.warn("Invalid hex color format. Please use #RRGGBB.");
-    }
-  };
-
-  const handleColorKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddColor();
-    }
-  };
-
-  const handleRemoveColor = (color) => {
-    dispatch({ type: 'REMOVE_BRAND_COLOR', payload: color });
-  };
 
 
   const handleAddStyleWord = () => {
@@ -80,41 +47,36 @@ export default function BrandInputSection() {
         <CardDescription>Provide details about your brand identity.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Color Palette */}
+        {/* Primary Color */}
         <div className="space-y-2">
-          <Label htmlFor="brand-color" className="flex items-center gap-2">
+            <Label htmlFor="primary-color" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
-            Brand Colors (Hex)
-          </Label>
-          <div className="flex items-center gap-2">
+            Primary Brand Color
+            </Label>
             <Input
-              id="brand-color"
-              type="text"
-              value={colorInput}
-              onChange={handleColorChange}
-              onKeyDown={handleColorKeyDown}
-              placeholder="#RRGGBB"
-              maxLength={7}
-              className="flex-grow"
+            id="primary-color"
+            type="color"
+            value={state.primaryColor}
+            onChange={(e) => dispatch({ type: 'SET_PRIMARY_COLOR', payload: e.target.value })}
+            className="w-20 h-10 p-1 rounded-md border cursor-pointer"
             />
-            <Button onClick={handleAddColor} type="button" size="sm" variant="outline">Add</Button>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {state.brandColors.map((color) => (
-              <Badge key={color} variant="secondary" className="flex items-center gap-1 pr-1">
-                <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: color }} />
-                {color}
-                <button
-                  onClick={() => handleRemoveColor(color)}
-                  className="rounded-full hover:bg-muted p-0.5"
-                  aria-label={`Remove color ${color}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
         </div>
+
+        {/* Secondary Color */}
+        <div className="space-y-2">
+            <Label htmlFor="secondary-color" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Secondary Brand Color
+            </Label>
+            <Input
+            id="secondary-color"
+            type="color"
+            value={state.secondaryColor}
+            onChange={(e) => dispatch({ type: 'SET_SECONDARY_COLOR', payload: e.target.value })}
+            className="w-20 h-10 p-1 rounded-md border cursor-pointer"
+            />
+        </div>
+
 
         {/* Style Words */}
         <div className="space-y-2">

@@ -9,7 +9,8 @@ import { createContext, useContext, useReducer, useCallback } from 'react';
 const initialState = {
   referenceImage: null,
   referenceText: '',
-  brandColors: [],
+  primaryColor: '#3498db', // Default Muted Blue
+  secondaryColor: '#008080', // Default Teal Accent
   brandStyleWords: [],
   targetAudience: '',
   outputFormat: 'Instagram Post', // Default format
@@ -35,16 +36,10 @@ const brandReducer = (state, action) => {
       return { ...state, referenceImage: action.payload, error: null }; // Clear error on new image
     case 'SET_REFERENCE_TEXT':
       return { ...state, referenceText: action.payload };
-    case 'ADD_BRAND_COLOR':
-      if (!state.brandColors.includes(action.payload)) {
-        return { ...state, brandColors: [...state.brandColors, action.payload] };
-      }
-      return state;
-    case 'REMOVE_BRAND_COLOR':
-      return {
-        ...state,
-        brandColors: state.brandColors.filter((color) => color !== action.payload),
-      };
+    case 'SET_PRIMARY_COLOR':
+        return { ...state, primaryColor: action.payload };
+    case 'SET_SECONDARY_COLOR':
+        return { ...state, secondaryColor: action.payload };
     case 'ADD_STYLE_WORD':
         if (!state.brandStyleWords.includes(action.payload)) {
             return { ...state, brandStyleWords: [...state.brandStyleWords, action.payload] };
@@ -108,3 +103,4 @@ export const useBrandContext = () => {
   }
   return context;
 };
+

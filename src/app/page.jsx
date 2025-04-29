@@ -48,10 +48,10 @@ export default function Home() {
         goToStep(1); // Go back to upload step
         return;
     }
-    if (state.brandColors.length === 0 || state.brandStyleWords.length === 0 || !state.targetAudience) {
+    if (!state.primaryColor || !state.secondaryColor || state.brandStyleWords.length === 0 || !state.targetAudience) {
         toast({
             title: "Missing Brand Info",
-            description: "Please provide brand colors, style words, and target audience.",
+            description: "Please provide primary/secondary colors, style words, and target audience.",
             variant: "destructive",
         });
         goToStep(2); // Go back to brand info step
@@ -65,7 +65,7 @@ export default function Home() {
       // --- Generate Ad Copy ---
       const copyInput = {
         brandStyle: state.brandStyleWords.join(', '),
-        colors: state.brandColors,
+        colors: [state.primaryColor, state.secondaryColor],
         targetAudience: state.targetAudience,
         format: state.outputFormat,
         referenceText: state.referenceText || undefined, // Pass if available
@@ -79,7 +79,7 @@ export default function Home() {
       // and pair it with the generated copy.
        const visualInput = {
         referenceAdImage: state.referenceImage,
-        brandColors: state.brandColors,
+        brandColors: [state.primaryColor, state.secondaryColor],
         brandStyleWords: state.brandStyleWords,
         targetAudience: state.targetAudience,
         outputFormat: state.outputFormat,
@@ -158,7 +158,7 @@ export default function Home() {
       case 1:
         return !state.referenceImage;
       case 2:
-        return state.brandColors.length === 0 || state.brandStyleWords.length === 0 || !state.targetAudience;
+        return !state.primaryColor || !state.secondaryColor || state.brandStyleWords.length === 0 || !state.targetAudience;
       // Steps 3 and 4 don't have specific validation before proceeding
       default:
         return false;
