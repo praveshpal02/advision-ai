@@ -14,7 +14,7 @@ import {
   Image as ImageIcon,
   Text,
   Settings,
-  KeyRound,
+  // KeyRound, // Removed KeyRound icon
   FileScan, // Icon for analysis
 } from 'lucide-react';
 import { useBrandContext } from '@/context/BrandContext';
@@ -26,7 +26,7 @@ import InstructionsBox from '@/components/InstructionsBox';
 import VariationsPanel from '@/components/VariationsPanel';
 import { analyzeImageWrapper } from '@/ai/flows/analyze-image.jsx'; // Import the updated analysis flow from jsx
 import { generateAdCopy } from '@/ai/flows/generate-ad-copy.jsx'; // Import from jsx
-import { generateVisualAdWrapper } from '@/ai/flows/generate-visual-ad.jsx'; // Import wrapper function
+// import { generateVisualAdWrapper } from '@/ai/flows/generate-visual-ad.jsx'; // SKIPPED: Import wrapper function
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added import for Alert
 
@@ -152,15 +152,16 @@ export default function Home() {
        goToStep(1);
        return;
      }
-     if (!state.openaiApiKey) { // OpenAI Key is now essential for generation
-       toast({
-         title: 'Missing OpenAI API Key',
-         description: 'Please enter your OpenAI API key in Step 1 for image generation.',
-         variant: 'destructive',
-       });
-       goToStep(1);
-       return;
-     }
+    // SKIPPED: OpenAI Key Check Removed
+    // if (!state.openaiApiKey) { // OpenAI Key is now essential for generation
+    //   toast({
+    //     title: 'Missing OpenAI API Key',
+    //     description: 'Please enter your OpenAI API key in Step 1 for image generation.',
+    //     variant: 'destructive',
+    //   });
+    //   goToStep(1);
+    //   return;
+    // }
     if (
       !state.primaryColor ||
       !state.secondaryColor ||
@@ -228,63 +229,28 @@ export default function Home() {
          adCopies = adCopies.slice(0, state.numberOfVariations); // Ensure copy array matches requested number
       }
 
-      // --- Generate Visual Ads (Leverage analysis results) ---
-      const visualInput = {
-        // referenceAdImage: state.referenceImage, // Removed, not in schema
-        openaiApiKey: state.openaiApiKey, // Pass API key - NOW REQUIRED
-        // Use manually set colors primarily, fallback to analyzed if necessary
-        brandColors: [
-            state.primaryColor || state.analysisResult?.colors?.primary || '#3498db',
-            state.secondaryColor || state.analysisResult?.colors?.secondary || '#008080'
-        ],
-        brandStyleWords: state.brandStyleWords.length > 0 ? state.brandStyleWords : state.analysisResult?.styleKeywords || [], // Use manual if set, else analyzed
-        targetAudience: state.targetAudience,
-        outputFormat: state.outputFormat,
-        promptTweaks: promptTweaks || undefined,
-        numberOfVariations: state.numberOfVariations, // Use potentially adjusted number
-        width: adSize.width,
-        height: adSize.height,
-        // Pass analyzed elements to help the visual prompt generation flow
-        analyzedData: state.analysisResult ? {
-            fontStyle: state.analysisResult.fontStyle,
-            layoutStyle: state.analysisResult.layoutStyle,
-            textElements: state.analysisResult.textElements,
-            // Pass the full colors object from analysis
-            colors: state.analysisResult.colors,
-        } : null, // Pass null if no analysis result
-        // Pass generated copy elements to potentially include in the visual prompt
-         copyElements: adCopies.length > 0 ? adCopies[0] : null, // Pass first generated copy or null
-      };
-      console.log('Generating Visuals with input:', JSON.stringify(visualInput, null, 2)); // Log the exact input
+      // --- SKIPPED: Generate Visual Ads ---
+      // const visualInput = { ... };
+      // console.log('Generating Visuals with input:', JSON.stringify(visualInput, null, 2)); // Log the exact input
+      // const visualResult = await generateVisualAdWrapper(visualInput);
+      // const visualVariations = visualResult.generatedAdVariations; // Array of data URIs or URLs
+      // console.log('Generated Visuals:', visualVariations);
+      // if (!visualVariations || visualVariations.length === 0) {
+      //   throw new Error('AI failed to generate visual ad variations.');
+      // }
+      // const finalVariationCount = visualVariations.length;
+      // if (finalVariationCount !== adCopies.length) { ... }
 
-      // Call the actual visual ad generation flow wrapper
-      const visualResult = await generateVisualAdWrapper(visualInput);
-      const visualVariations = visualResult.generatedAdVariations; // Array of data URIs or URLs
-      console.log('Generated Visuals:', visualVariations);
+      // --- Create Combined Variations with Placeholder Images ---
+      const placeholderBaseUrl = 'https://picsum.photos';
+      const { width, height } = adSize;
 
-      if (!visualVariations || visualVariations.length === 0) {
-        throw new Error('AI failed to generate visual ad variations.');
-      }
-
-      // Adjust copy array length if visual generation returned a different number than requested/adjusted copy count
-      const finalVariationCount = visualVariations.length;
-      if (finalVariationCount !== adCopies.length) {
-        console.warn(
-          `Visual variations (${finalVariationCount}) differ from copy variations (${adCopies.length}). Trimming to match visuals.`
-        );
-        // Update state and trim copy array
-        dispatch({
-          type: 'SET_NUMBER_OF_VARIATIONS',
-          payload: finalVariationCount,
-        });
-        adCopies.length = finalVariationCount; // Trim the copy array
-      }
-
-      const combinedVariations = visualVariations.map((image, index) => ({
-        image: image, // Use generated image URI/URL here
-        copy: adCopies[index] || { headline: '', subheadline: '', cta: ''}, // Pair with corresponding copy, provide fallback
+      const combinedVariations = adCopies.map((copy, index) => ({
+        // Generate a unique placeholder image URL for each variation
+        image: `${placeholderBaseUrl}/${width}/${height}?random=${index}`,
+        copy: copy,
       }));
-      console.log('Combined Variations:', combinedVariations);
+      console.log('Combined Variations (using placeholders):', combinedVariations);
 
       dispatch({ type: 'GENERATION_SUCCESS', payload: combinedVariations });
     } catch (error) {
@@ -362,7 +328,8 @@ export default function Home() {
                     rows={3}
                   />
                 </div>
-                <div>
+                {/* SKIPPED: OpenAI API Key Input Removed */}
+                {/* <div>
                   <Label
                     htmlFor="openai-api-key"
                     className="mb-2 block flex items-center gap-2"
@@ -385,7 +352,7 @@ export default function Home() {
                     Needed for generating ad visuals using DALL·E. Your key is
                     not stored persistently.
                   </p>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>
@@ -473,7 +440,8 @@ export default function Home() {
           !state.targetAudience
         );
       case 4:
-        return state.numberOfVariations < 1 || state.numberOfVariations > 10 || !state.openaiApiKey; // Also check for API key here
+        // SKIPPED: API Key check removed
+        return state.numberOfVariations < 1 || state.numberOfVariations > 10; // || !state.openaiApiKey;
       // Step 3 doesn't have specific validation before proceeding
       default:
         return false;
@@ -483,7 +451,8 @@ export default function Home() {
    const canGenerate = state.currentStep === 4 &&
                         state.referenceImage &&
                         state.analysisResult && // Ensure analysis is done
-                        state.openaiApiKey && // Ensure API key is present
+                        // SKIPPED: API Key check removed
+                        // state.openaiApiKey && // Ensure API key is present
                         state.primaryColor &&
                         state.secondaryColor &&
                         state.brandStyleWords.length > 0 &&

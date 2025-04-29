@@ -9,7 +9,7 @@ import { AnalyzeImageOutput } from '@/ai/flows/analyze-image'; // Import the typ
 const initialState = {
   referenceImage: null,
   referenceText: '',
-  openaiApiKey: '', // Added OpenAI API Key field
+  // openaiApiKey: '', // SKIPPED: Removed OpenAI API Key field
   analysisResult: null, // Added field to store analysis results
   analysisError: null, // Added field for analysis errors
   isAnalyzing: false, // Added field to track analysis status
@@ -49,7 +49,7 @@ const initialState = {
  *   { type: 'PREV_STEP' } |
  *   { type: 'SET_REFERENCE_IMAGE'; payload: string | null } |
  *   { type: 'SET_REFERENCE_TEXT'; payload: string } |
- *   { type: 'SET_OPENAI_API_KEY'; payload: string } |
+ *   // { type: 'SET_OPENAI_API_KEY'; payload: string } | // SKIPPED
  *   { type: 'ANALYSIS_START' } |
  *   { type: 'SET_ANALYSIS_RESULT'; payload: AnalyzeImageOutputFormat | null } |
  *   { type: 'ANALYSIS_ERROR'; payload: string | null } |
@@ -120,8 +120,8 @@ const brandReducer = (state, action) => {
       return { ...state, referenceImage: action.payload, error: null, analysisResult: null, analysisError: null, isAnalyzing: false }; // Clear errors/analysis on new image
     case 'SET_REFERENCE_TEXT':
       return { ...state, referenceText: action.payload };
-    case 'SET_OPENAI_API_KEY': // Added action type
-      return { ...state, openaiApiKey: action.payload };
+    // case 'SET_OPENAI_API_KEY': // SKIPPED: Removed action type
+    //   return { ...state, openaiApiKey: action.payload };
     case 'ANALYSIS_START':
         return { ...state, isAnalyzing: true, analysisResult: null, analysisError: null };
     case 'SET_ANALYSIS_RESULT':
