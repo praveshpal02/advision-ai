@@ -1,16 +1,15 @@
-
 'use server';
 /**
  * @fileOverview Generates a detailed DALL-E prompt for visual ad creation, incorporating analysis and copy generation results.
  *
  * - generatePrompt - A function that generates a DALL-E prompt.
- * - GeneratePromptInput - The input type for the generatePrompt function.
- * - GeneratePromptOutput - The return type for the generatePrompt function.
+ * - GeneratePromptInputSchema - The Zod schema for the input to generatePrompt.
+ * - GeneratePromptOutputSchema - The Zod schema for the output of generatePrompt.
  */
 
 import { ai } from '@/ai/ai-instance';
 import { z } from 'genkit';
-import type { AdCopySchema } from '@/types'; // Import AdCopySchema type
+import { AdCopySchema } from '@/types'; // Import AdCopySchema Zod schema
 
 // Define schema for analyzed data input
 const AnalyzedDataSchema = z.object({
@@ -24,11 +23,8 @@ const AnalyzedDataSchema = z.object({
 }).optional();
 
 // Define schema for generated copy input
-const CopyElementsSchema = z.object({
-    headline: z.string().describe('Generated headline text.'),
-    subheadline: z.string().describe('Generated subheadline text.'),
-    cta: z.string().describe('Generated call-to-action text.'),
-}).optional();
+// Use the imported AdCopySchema Zod schema directly
+const CopyElementsSchema = AdCopySchema.optional();
 
 
 const GeneratePromptInputSchema = z.object({
@@ -41,14 +37,15 @@ const GeneratePromptInputSchema = z.object({
   analyzedData: AnalyzedDataSchema,
   copyElements: CopyElementsSchema,
 });
-export type GeneratePromptInput = z.infer<typeof GeneratePromptInputSchema>;
+// Removed TypeScript type export and direct Zod schema export
 
 const GeneratePromptOutputSchema = z.object({
   dallePrompt: z.string().describe('The generated DALL-E prompt for image creation.'),
 });
-export type GeneratePromptOutput = z.infer<typeof GeneratePromptOutputSchema>;
+// Removed TypeScript type export and direct Zod schema export
 
-export async function generatePrompt(input: GeneratePromptInput): Promise<GeneratePromptOutput> {
+export async function generatePrompt(input /*: GeneratePromptInput */) /*: Promise<GeneratePromptOutput> */ {
+  // Type hints removed as they are not valid in JSX
   return generatePromptFlow(input);
 }
 
@@ -105,26 +102,29 @@ Generate the DALL-E prompt now. Ensure it explicitly includes the headline "{{#i
 });
 
 
-const generatePromptFlow = ai.defineFlow<
-  typeof GeneratePromptInputSchema,
-  typeof GeneratePromptOutputSchema
->({
-  name: 'generatePromptFlow',
-  inputSchema: GeneratePromptInputSchema,
-  outputSchema: GeneratePromptOutputSchema,
-}, async input => {
-  console.log("Calling DALL-E prompt generator with input:", JSON.stringify(input, null, 2));
-  const { output } = await promptGenerator(input);
+const generatePromptFlow = ai.defineFlow(
+  {
+    name: 'generatePromptFlow',
+    inputSchema: GeneratePromptInputSchema,
+    outputSchema: GeneratePromptOutputSchema,
+  },
+  async (input) => {
+    console.log("Calling DALL-E prompt generator with input:", JSON.stringify(input, null, 2));
+    const { output } = await promptGenerator(input);
 
-  if (!output?.dallePrompt) {
-    console.error("Failed to generate DALL-E prompt from AI:", output);
-    throw new Error("AI failed to generate a valid DALL-E prompt.");
-  }
+    if (!output?.dallePrompt) {
+      console.error("Failed to generate DALL-E prompt from AI:", output);
+      throw new Error("AI failed to generate a valid DALL-E prompt.");
+    }
 
-  console.log("Received DALL-E prompt:", output.dallePrompt);
-  // Basic check for placeholders which might indicate missing input propagation
-  if (output.dallePrompt.includes("Compelling Headline") || output.dallePrompt.includes("Engaging Subheadline")) {
-      console.warn("DALL-E prompt contains placeholder text. Check if copy/analysis data was provided correctly.");
+    console.log("Received DALL-E prompt:", output.dallePrompt);
+    // Basic check for placeholders which might indicate missing input propagation
+    if (output.dallePrompt.includes("Compelling Headline") || output.dallePrompt.includes("Engaging Subheadline")) {
+        console.warn("DALL-E prompt contains placeholder text. Check if copy/analysis data was provided correctly.");
+    }
+    return output;
   }
-  return output;
-});
+);
+
+// Removed schema exports
+// export { GeneratePromptInputSchema, GeneratePromptOutputSchema };
