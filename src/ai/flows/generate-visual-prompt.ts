@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a detailed DALL-E prompt for visual ad creation, incorporating analysis and copy generation results.
@@ -99,7 +100,7 @@ Generated Copy (Use this text):
 -   User Tweaks: {{{promptTweaks}}}
 {{/if}}
 
-Generate the DALL-E prompt now. Ensure it explicitly includes the headline "{{#if copyElements}}{{{copyElements.headline}}}{{#else}}{{#if analyzedData.textElements.headline}}{{{analyzedData.textElements.headline}}}{{#else}}Compelling Headline{{/if}}{{/if}}", subheadline "{{#if copyElements}}{{{copyElements.subheadline}}}{{#else}}{{#if analyzedData.textElements.subheadline}}{{{analyzedData.textElements.subheadline}}}{{#else}}Engaging Subheadline{{/if}}{{/if}}", and CTA "{{#if copyElements}}{{{copyElements.cta}}}{{#else}}{{#if analyzedData.textElements.cta}}{{{analyzedData.textElements.cta}}}{{#else}}Call to Action{{/if}}{{/if}}" with clear, modern typography.
+Generate the DALL-E prompt now. Ensure it explicitly includes the headline "{{#if copyElements}}{{{copyElements.headline}}}{{#else}}{{#if analyzedData}}{{#if analyzedData.textElements.headline}}{{{analyzedData.textElements.headline}}}{{#else}}Compelling Headline{{/if}}{{/if}}{{#unless analyzedData}}Compelling Headline{{/unless}}{{/if}}", subheadline "{{#if copyElements}}{{{copyElements.subheadline}}}{{#else}}{{#if analyzedData}}{{#if analyzedData.textElements.subheadline}}{{{analyzedData.textElements.subheadline}}}{{#else}}Engaging Subheadline{{/if}}{{/if}}{{#unless analyzedData}}Engaging Subheadline{{/unless}}{{/if}}", and CTA "{{#if copyElements}}{{{copyElements.cta}}}{{#else}}{{#if analyzedData}}{{#if analyzedData.textElements.cta}}{{{analyzedData.textElements.cta}}}{{#else}}Call to Action{{/if}}{{/if}}{{#unless analyzedData}}Call to Action{{/unless}}{{/if}}" with clear, modern typography.
 `,
 });
 
