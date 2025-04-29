@@ -3,6 +3,7 @@
 
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,16 @@ export default function Template2({
   primaryColor,
   secondaryColor,
 }) {
+  const templateRef = useRef(null);
+  const handleDownload = async () => {
+    const element = templateRef.current;
+    const canvas = await html2canvas(element);
+    const data = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = data;
+    link.download = 'template.png';
+    link.click();
+  };
    const cardStyle = {
     // Example: Use secondary color slightly desaturated for background
     backgroundColor: secondaryColor ? adjustColor(secondaryColor, -20) : '#e8e8e8',
@@ -30,7 +41,8 @@ export default function Template2({
    };
 
   return (
-    <Card className="w-full overflow-hidden shadow-lg relative aspect-square group">
+    <div id="template-container" ref={templateRef}>
+    <Card className="w-full overflow-hidden shadow-lg relative aspect-square group" >
       {backgroundImage && (
         <Image
           src={backgroundImage}
@@ -50,7 +62,12 @@ export default function Template2({
             </Button>
          </div>
        </div>
+         <Button className="absolute bottom-4 right-4 z-20" onClick={handleDownload} variant="primary">
+            Download
+        </Button>
+
     </Card>
+    </div>
   );
 }
 
@@ -70,3 +87,5 @@ function adjustColor(color, amount) {
     if (!color) return '#e8e8e8';
     return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
 }
+
+import html2canvas from 'html2canvas';

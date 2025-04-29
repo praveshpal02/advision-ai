@@ -18,7 +18,7 @@ const analysisPrompt = ai.definePrompt({
     output: { schema: AnalyzeImageOutputSchema },
     prompt: `Analyze this advertisement image meticulously. Extract the following details and provide them in the specified JSON format:
 
-1.  **Color Palette:** Identify the primary, secondary, and background colors. Also list up to 5 dominant colors overall as hex codes.
+1.  **Color Palette:** Identify the primary, secondary, and background colors. Also list up to 5 dominant colors overall as hex codes. Ensure generated images use similar color.
 2.  **Font Style:** Describe the general style of the fonts used (e.g., 'Clean sans-serif', 'Bold serif', 'Handwritten script', 'Modern geometric').
 3.  **Layout Style:** Describe the overall layout structure (e.g., 'Centered composition with prominent image', 'Asymmetrical layout with text overlay', 'Grid-based structure', 'Split layout').
 4.  **Text Elements:** Extract the main headline, subheadline (if present), and call-to-action (CTA) button text (if present). If an element is not clearly identifiable, omit its field or set it to null.
@@ -26,6 +26,10 @@ const analysisPrompt = ai.definePrompt({
 
 Image to analyze:
 {{media url=photoDataUri}}
+
+When generating variations of this image, ensure they are very similar to the original. The generated images should not deviate in topic, colors, elements and layout. They should retain the core message and theme of the original image. 
+
+
 
 Respond *only* with the JSON object matching the output schema. Ensure hex codes start with '#'.`,
     model: 'googleai/gemini-1.5-flash', // Ensure a vision-capable model is used

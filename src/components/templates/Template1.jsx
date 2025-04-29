@@ -3,6 +3,7 @@
 
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,7 @@ export default function Template1({
   primaryColor,
   secondaryColor,
 }) {
+    const templateRef = useRef(null);
   // Basic styling, can be enhanced significantly
   const cardStyle = {
     backgroundColor: secondaryColor || '#f0f0f0', // Use secondary color for background
@@ -27,9 +29,34 @@ export default function Template1({
     color: primaryColor || '#000000', // Use primary color for headline text
    };
 
+    const downloadTemplate = async () => {
+        if (templateRef.current) {
+          const element = templateRef.current;
+    
+          // Dynamically import html2canvas
+          const html2canvas = (await import('html2canvas')).default;
+    
+          try {
+            const canvas = await html2canvas(element);
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'template.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (error) {
+            console.error('Error generating image:', error);
+          }
+        }
+      };
 
   return (
-    <Card className="w-full overflow-hidden shadow-lg relative aspect-square group">
+    <div id="template-container" ref={templateRef}>
+        <Button className='absolute top-3 right-3 z-10' variant="primary" onClick={downloadTemplate}>
+            Download
+        </Button>
+        <Card className="w-full overflow-hidden shadow-lg relative aspect-square group">
       {backgroundImage && (
         <Image
           src={backgroundImage}
@@ -56,6 +83,7 @@ export default function Template1({
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
