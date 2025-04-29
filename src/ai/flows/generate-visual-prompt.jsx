@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a detailed DALL-E prompt for visual ad creation, incorporating analysis and copy generation results, and aiming for a specific style like beam.new.
